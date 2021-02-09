@@ -3,10 +3,10 @@
 # Runs the "345M" parameter model
 
 RANK=0
-WORLD_SIZE=1
+WORLD_SIZE=8
 
-DATA_PATH=<Specify path and file prefix>_text_document
-CHECKPOINT_PATH=<Specify path>
+DATA_PATH=data/enron/enron_text_document
+CHECKPOINT_PATH=checkpoints/gpt2_345m
 
 
 python pretrain_gpt2.py \
