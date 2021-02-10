@@ -61,6 +61,7 @@ def get_batch(data_iterator):
         data = next(data_iterator)
     else:
         data = None
+    print("Broadcasting!"
     data_b = mpu.broadcast_data(keys, data, datatype)
 
     # Unpack.
@@ -89,6 +90,7 @@ def get_batch_pipe(data):
     datatype = torch.int64
 
     # Broadcast data.
+    print("Broadcasting!")
     data_b = mpu.broadcast_data(keys, data, datatype)
 
     # Unpack.
