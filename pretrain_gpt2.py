@@ -61,7 +61,7 @@ def get_batch(data_iterator):
         data = next(data_iterator)
     else:
         data = None
-    print("Broadcasting!"
+    print("Broadcasting!")
     data_b = mpu.broadcast_data(keys, data, datatype)
 
     # Unpack.
