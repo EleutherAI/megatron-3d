@@ -15,8 +15,6 @@ RUN mkdir -p ~/.ssh /app /job /build_dir && \
 WORKDIR /build_dir
 
 COPY requirements.txt /build_dir
-RUN pip install torch==1.7.1
-RUN pip install --upgrade tensorflow
 RUN pip install -r requirements.txt
 RUN pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" git+https://github.com/NVIDIA/apex.git
 
