@@ -16,7 +16,7 @@ spec:
     spec:
       terminationGracePeriodSeconds: 10
       containers:
-      - name: neox
+      - name: megatron-3d
         command: ["/usr/sbin/sshd"]
         args: ["-D"]
         tty: true
