@@ -48,10 +48,10 @@ chown -R root /root/.ssh;
 cd /app;
 git clone https://github.com/EleutherAI/megatron-3d.git;
 "
-if [ -n "$WANDB_APIKEY" ]
-then
-      post_start_script+=" wandb login $WANDB_APIKEY; "
-fi
+# if [ -n "$WANDB_APIKEY" ]
+# then
+#       post_start_script+=" wandb login $WANDB_APIKEY; "
+# fi
 
 echo $post_start_script > $WD/post_start_script.sh
 
