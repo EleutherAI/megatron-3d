@@ -17,6 +17,7 @@ WORKDIR /build_dir
 COPY requirements.txt /build_dir
 RUN pip install -r requirements.txt
 RUN pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" git+https://github.com/NVIDIA/apex.git
+RUN apt-get install -y openssh-server
 
 WORKDIR /app
 
