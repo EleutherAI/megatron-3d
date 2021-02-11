@@ -45,11 +45,8 @@ cp /secrets/id_rsa.pub /root/.ssh/authorized_keys;
 chmod 600 /root/.ssh/authorized_keys;
 chmod 700 /root/.ssh;
 chown -R root /root/.ssh;
-rm -r /app/*;
 cd /app;
-git clone https://github.com/EleutherAI/megatron-3d.git .;
-cd megatron-3d;
-git checkout $BRANCH;
+git clone https://github.com/EleutherAI/megatron-3d.git;
 "
 if [ -n "$WANDB_APIKEY" ]
 then
