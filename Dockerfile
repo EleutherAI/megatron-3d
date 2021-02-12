@@ -5,18 +5,15 @@ RUN apt-get update -y && \
     python -m pip install --upgrade pip && \
     pip install gpustat
 
-RUN mkdir -p ~/.ssh /app /job /build_dir && \
+RUN mkdir -p ~/.ssh /app /job && \
     echo 'Host *' > ~/.ssh/config && \
     echo '    StrictHostKeyChecking no' >> ~/.ssh/config && \
     echo 'AuthorizedKeysFile     .ssh/authorized_keys' >> /etc/ssh/sshd_config && \
     echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config && \
     echo 'export PDSH_RCMD_TYPE=ssh' >> ~/.bashrc
 
-WORKDIR /build_dir
-
-COPY requirements.txt /build_dir
-RUN pip install -r requirements.txt
-RUN pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" git+https://github.com/NVIDIA/apex.git
-
 WORKDIR /app
+
+COPY requirements.txt /app
+RUN pip install -r requirements.txt
 
