@@ -5,3 +5,4 @@ autopep8
 zstandard
 cupy-cuda102
 mpi4py
+wandb
