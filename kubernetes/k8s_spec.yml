@@ -17,9 +17,8 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: megatron-3d
-        command: ["/bin/bash"]
-        #/usr/sbin/sshd
-        #args: ["-D"]
+        command: ["/usr/sbin/sshd"]
+        args: ["-D"]
         tty: true
         image: leogao2/megatron-3d
         ports:
