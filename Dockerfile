@@ -5,7 +5,7 @@ RUN apt-get update -y && \
     python -m pip install --upgrade pip && \
     pip install gpustat
 
-RUN mkdir -p ~/.ssh /app /job && \
+RUN mkdir -p ~/.ssh /app /job /var/run/sshd && \
     echo 'Host *' > ~/.ssh/config && \
     echo '    StrictHostKeyChecking no' >> ~/.ssh/config && \
     echo 'AuthorizedKeysFile     .ssh/authorized_keys' >> /etc/ssh/sshd_config && \
