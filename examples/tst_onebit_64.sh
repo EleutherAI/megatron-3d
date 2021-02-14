@@ -4,7 +4,7 @@ GPUS_PER_NODE=8
 # Change for multinode config
 MASTER_ADDR=127.0.0.1
 MASTER_PORT=2000
-NNODES=1
+NNODES=8
 NODE_RANK=1
 
 export DLWS_NUM_WORKER=${NNODES}
@@ -20,7 +20,7 @@ CHECKPOINT_PATH=checkpoints/gpt2_XL_ds
 script_path=$(realpath $0)
 script_dir=$(dirname $script_path)
 #config_json="configs/deepspeed_configs/ds_zero_stage_2_config.json"
-config_json="configs/deepspeed_configs/ds_zero_stage_1_config.json"
+config_json="configs/deepspeed_configs/ds_zero_stage_1_onebitadam.json"
 #config_json="configs/deepspeed_configs/ds_config.json"
 
 # Training options: 
@@ -50,7 +50,7 @@ SYNCHRONIZE=true
 PROFILE=false
 
 # GPT options:
-NLAYERS=24
+NLAYERS=12
 NHIDDEN=2048
 NHEADS=16
 SEQLEN=1024
@@ -96,7 +96,8 @@ gpt_options=" \
         --eval-iters 10 \
         --fp16 \
         --tensorboard-dir ${LOGDIR} \
-        --sparsity $SPARSITY
+        --sparsity $SPARSITY \
+        --onebitadam
 "
   
  deepspeed_options=" \

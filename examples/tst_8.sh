@@ -1,6 +1,6 @@
 #! /bin/bash
 
-GPUS_PER_NODE=32
+GPUS_PER_NODE=8
 # Change for multinode config
 MASTER_ADDR=127.0.0.1
 MASTER_PORT=2000
@@ -41,7 +41,7 @@ contigious_gradients=true
 rbs=50000000
 agbs=5000000000
 
-#Activation Checkpointing and Contiguous Memory
+#Actication Checkpointing and Contigious Memory
 chkp_layers=1
 PA=true
 PA_CPU=true
@@ -50,7 +50,7 @@ SYNCHRONIZE=true
 PROFILE=false
 
 # GPT options:
-NLAYERS=24
+NLAYERS=12
 NHIDDEN=2048
 NHEADS=16
 SEQLEN=1024
