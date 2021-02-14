@@ -163,7 +163,7 @@ class ParallelSelfAttention(MegatronModule):
 
     def __init__(self, attention_mask_func, init_method,
                  output_layer_init_method, layer_number, sparse=False,
-                 rpe=False, rpe_bidirectional=True, rpe_num_buckets=32, rpe_max_distance=128):
+                 rpe=False, rpe_causal=False, rpe_num_buckets=32, rpe_max_distance=128):
         super(ParallelSelfAttention, self).__init__()
         args = get_args()
         self.fp16 = args.fp16
@@ -205,7 +205,7 @@ class ParallelSelfAttention(MegatronModule):
                 attention="unidirectional"
             )
             if rpe:
-                self.rpe = RelativePositionBias(bidirectional=rpe_bidirectional, num_buckets=rpe_num_buckets, max_distance=rpe_max_distance, n_heads=self.num_attention_heads_per_partition) # TO DO: Check if we need here np or n?
+                self.rpe = RelativePositionBias(causal=rpe_causal, num_buckets=rpe_num_buckets, max_distance=rpe_max_distance, n_heads=self.num_attention_heads_per_partition)
 
             self.sparse_attn = SparseSelfAttention(
                 sparsity_config=sparsity_config,
