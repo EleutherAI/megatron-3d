@@ -26,6 +26,7 @@ from megatron.module import MegatronModule
 from megatron.checkpointing import get_checkpoint_version
 from megatron.model.fused_softmax import FusedScaleMaskSoftmax
 from megatron.model.fused_bias_gelu import bias_gelu_impl
+from megatron.model.t5rpe import RelativePositionBias
 from megatron.model.utils import openai_gelu, erf_gelu
 
 import deepspeed
@@ -161,7 +162,8 @@ class ParallelSelfAttention(MegatronModule):
     """
 
     def __init__(self, attention_mask_func, init_method,
-                 output_layer_init_method, layer_number, sparse=False):
+                 output_layer_init_method, layer_number, sparse=False,
+                 rpe=False, rpe_bidirectional=True, rpe_num_buckets=32, rpe_max_distance=128):
         super(ParallelSelfAttention, self).__init__()
         args = get_args()
         self.fp16 = args.fp16
@@ -202,6 +204,8 @@ class ParallelSelfAttention(MegatronModule):
                 num_heads=args.num_attention_heads,
                 attention="unidirectional"
             )
+            if rpe:
+                self.rpe = RelativePositionBias(bidirectional=rpe_bidirectional, num_buckets=rpe_num_buckets, max_distance=rpe_max_distance, n_heads=self.num_attention_heads_per_partition) # TO DO: Check if we need here np or n?
 
             self.sparse_attn = SparseSelfAttention(
                 sparsity_config=sparsity_config,
@@ -308,6 +312,9 @@ class ParallelSelfAttention(MegatronModule):
         if get_key_value:
             present = (key_layer, value_layer)
 
+        if self.rpe:
+            rpe = self.rpe(query_layer.size(0), key_layer.size(0))
+
         if not self.sparse:
             # ===================================
             # Raw attention scores. [b, np, s, s]
@@ -363,6 +370,9 @@ class ParallelSelfAttention(MegatronModule):
             # Attention probs and dropout
             # ===========================
 
+            if self.rpe:
+                attention_scores += rpe[None,...] # [1, np, sq, sk]
+
             # attention scores and attention mask [b, np, sq, sk]
             attention_probs = self.scale_mask_softmax(attention_scores,
                                                       attention_mask)
@@ -403,7 +413,7 @@ class ParallelSelfAttention(MegatronModule):
             query_layer, key_layer, value_layer = map(lambda t: t.permute(1, 2, 0, 3).contiguous(), (query_layer, key_layer,
                                                                                         value_layer))
             # output shape [b, np(heads), sq, hn]                                                                        
-            context_layer = self.sparse_attn(query_layer, key_layer, value_layer, attn_mask=attention_mask)
+            context_layer = self.sparse_attn(query_layer, key_layer, value_layer, attn_mask=attention_mask, rpe=rpe if self.rpe else None)
         
         # [b, np, sq, hn] --> [sq, b, np, hn]
         context_layer = context_layer.permute(2, 0, 1, 3).contiguous()
