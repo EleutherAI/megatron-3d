@@ -598,6 +598,13 @@ class ParallelTransformer(MegatronModule):
             'number of layers should be divisible by number of unique layers'
         self.param_sharing_style = args.param_sharing_style
 
+        # Duplicate from lines 178-184 because we need it for rpe setup:
+        world_size = mpu.get_model_parallel_world_size()
+        self.hidden_size_per_partition = mpu.divide(args.hidden_size,
+                                                    world_size)
+        self.num_attention_heads_per_partition = mpu.divide(
+            args.num_attention_heads, world_size)
+
         if rpe:
             self.rpe = RelativePositionBias(causal=rpe_causal, num_buckets=rpe_num_buckets, max_distance=rpe_max_distance, n_heads=self.num_attention_heads_per_partition)
 
@@ -612,7 +619,7 @@ class ParallelTransformer(MegatronModule):
                 sparse = not layer_number % 2 == 0
             return ParallelTransformerLayer(
                 attention_mask_func, init_method,
-                output_layer_init_method, layer_number, sparse=sparse, rpe=self.rpe)
+                output_layer_init_method, layer_number, sparse=sparse, rpe=self.rpe if rpe else False)
 
         self.layers = torch.nn.ModuleList(
             [build_layer(i + 1) for i in range(self.num_unique_layers)])
