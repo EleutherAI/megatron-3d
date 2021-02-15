@@ -163,7 +163,7 @@ class ParallelSelfAttention(MegatronModule):
 
     def __init__(self, attention_mask_func, init_method,
                  output_layer_init_method, layer_number, sparse=False,
-                 rpe=False, rpe_causal=False, rpe_num_buckets=32, rpe_max_distance=128):
+                 rpe=False):
         super(ParallelSelfAttention, self).__init__()
         args = get_args()
         self.fp16 = args.fp16
@@ -205,7 +205,7 @@ class ParallelSelfAttention(MegatronModule):
                 attention="unidirectional"
             )
             if rpe:
-                self.rpe = RelativePositionBias(causal=rpe_causal, num_buckets=rpe_num_buckets, max_distance=rpe_max_distance, n_heads=self.num_attention_heads_per_partition)
+                self.rpe = rpe
 
             self.sparse_attn = SparseSelfAttention(
                 sparsity_config=sparsity_config,
@@ -469,7 +469,7 @@ class ParallelTransformerLayer(MegatronModule):
     """
 
     def __init__(self, attention_mask_func, init_method,
-                 output_layer_init_method, layer_number, sparse=False):
+                 output_layer_init_method, layer_number, sparse=False, rpe=False):
         args = get_args()
 
         super(ParallelTransformerLayer, self).__init__()
@@ -487,7 +487,8 @@ class ParallelTransformerLayer(MegatronModule):
         self.attention = ParallelSelfAttention(attention_mask_func, init_method,
                                                output_layer_init_method,
                                                layer_number,
-                                               sparse=sparse)
+                                               sparse=sparse,
+                                               rpe=rpe)
         self.hidden_dropout = args.hidden_dropout
         self.bias_dropout_fusion = args.bias_dropout_fusion
 
@@ -579,7 +580,8 @@ class ParallelTransformer(MegatronModule):
     """Transformer class."""
 
     def __init__(self, attention_mask_func,
-                 init_method, output_layer_init_method):
+                 init_method, output_layer_init_method,
+                 rpe=False, rpe_causal=False, rpe_num_buckets=32, rpe_max_distance=128):
         super(ParallelTransformer, self).__init__()
         args = get_args()
 
@@ -596,6 +598,9 @@ class ParallelTransformer(MegatronModule):
             'number of layers should be divisible by number of unique layers'
         self.param_sharing_style = args.param_sharing_style
 
+        if rpe:
+            self.rpe = RelativePositionBias(causal=rpe_causal, num_buckets=rpe_num_buckets, max_distance=rpe_max_distance, n_heads=self.num_attention_heads_per_partition)
+
         # Transformer layers.
         sparsity = args.sparsity
         def build_layer(layer_number):
@@ -607,7 +612,7 @@ class ParallelTransformer(MegatronModule):
                 sparse = not layer_number % 2 == 0
             return ParallelTransformerLayer(
                 attention_mask_func, init_method,
-                output_layer_init_method, layer_number, sparse=sparse)
+                output_layer_init_method, layer_number, sparse=sparse, rpe=self.rpe)
 
         self.layers = torch.nn.ModuleList(
             [build_layer(i + 1) for i in range(self.num_unique_layers)])
