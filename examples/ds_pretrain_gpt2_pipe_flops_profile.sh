@@ -11,9 +11,10 @@ NODE_RANK=1
 export DLWS_NUM_WORKER=${NNODES}
 export DLWS_NUM_GPU_PER_WORKER=${GPUS_PER_NODE}
 
-DATA_PATH=data/enron/enron_text_document # data/webtext/webtext_text_document
-VOCAB_PATH=gpt2-vocab.json # data/gpt2-vocab.json
-MERGE_PATH=gpt2-merges.txt # data/gpt2-merges.txt
+DATA_DIR="${DATA_DIR:-data}"
+DATA_PATH=$DATA_DIR/enron/enron_text_document
+VOCAB_PATH=$DATA_DIR/gpt2-vocab.json
+MERGE_PATH=$DATA_DIR/gpt2-merges.txt
 CHECKPOINT_PATH=checkpoints/gpt2_345m_ds
 
 script_path=$(realpath $0)
@@ -135,7 +136,9 @@ fi
 
 full_options="${gpt_options} ${deepspeed_options} ${chkp_opt}"
 
-run_cmd="deepspeed pretrain_gpt2.py $@ ${full_options}"
+DS_EXE="${DS_EXE:-deepspeed}"
+
+run_cmd="$DS_EXE pretrain_gpt2.py $@ ${full_options}"
 echo ${run_cmd}
 eval ${run_cmd}
 
