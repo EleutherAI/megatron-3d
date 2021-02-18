@@ -196,6 +196,11 @@ class ParallelSelfAttention(MegatronModule):
             coeff = self.layer_number
             self.norm_factor *= coeff
 
+        if rpe:
+            self.rpe = rpe
+        else:
+            self.rpe = False
+
         self.sparse = sparse
         if self.sparse:
             assert args.model_parallel_size <= 1, "TODO: sparsity doesn't yet work with mp size > 1"
@@ -204,8 +209,6 @@ class ParallelSelfAttention(MegatronModule):
                 num_heads=args.num_attention_heads,
                 attention="unidirectional"
             )
-            if rpe:
-                self.rpe = rpe
 
             self.sparse_attn = SparseSelfAttention(
                 sparsity_config=sparsity_config,
@@ -369,9 +372,9 @@ class ParallelSelfAttention(MegatronModule):
             # ===========================
             # Attention probs and dropout
             # ===========================
-
+            
             if self.rpe:
-                attention_scores += rpe[None,...] # [1, np, sq, sk]
+                attention_scores += rpe # [1, np, sq, sk]
 
             # attention scores and attention mask [b, np, sq, sk]
             attention_probs = self.scale_mask_softmax(attention_scores,
@@ -580,8 +583,8 @@ class ParallelTransformer(MegatronModule):
     """Transformer class."""
 
     def __init__(self, attention_mask_func,
-                 init_method, output_layer_init_method,
-                 rpe=False, rpe_causal=False, rpe_num_buckets=32, rpe_max_distance=128):
+            init_method, output_layer_init_method,
+            rpe=True, rpe_causal=False, rpe_num_buckets=32, rpe_max_distance=128):
         super(ParallelTransformer, self).__init__()
         args = get_args()
 
@@ -606,7 +609,7 @@ class ParallelTransformer(MegatronModule):
             args.num_attention_heads, world_size)
 
         if rpe:
-            self.rpe = RelativePositionBias(causal=rpe_causal, num_buckets=rpe_num_buckets, max_distance=rpe_max_distance, n_heads=self.num_attention_heads_per_partition)
+            self.rpe = RelativePositionBias(causal=rpe_causal, num_buckets=rpe_num_buckets, max_distance=rpe_max_distance, heads=self.num_attention_heads_per_partition)
 
         # Transformer layers.
         sparsity = args.sparsity
