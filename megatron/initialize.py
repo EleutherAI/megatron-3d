@@ -131,9 +131,7 @@ def _initialize_distributed():
                   'skipping initialization ...', flush=True)
         args.rank = torch.distributed.get_rank()
         args.world_size = torch.distributed.get_world_size()
-
     else:
-
         if args.rank == 0:
             print('> initializing torch distributed ...', flush=True)
         # Manually set the device ids.

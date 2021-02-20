@@ -1,5 +1,7 @@
 FROM atlanticcrypto/cuda-ssh-server:10.2-cudnn
 
+SHELL [ "/bin/bash", "--login", "-c" ]
+
 #### System package
 RUN apt-get update -y && \
     apt-get install -y \
@@ -32,6 +34,7 @@ RUN cd ${STAGE_DIR} && \
     rm -r ${STAGE_DIR}/openmpi-${OPENMPI_VERSION}
 ENV PATH=/usr/local/mpi/bin:${PATH} \
     LD_LIBRARY_PATH=/usr/local/lib:/usr/local/mpi/lib:/usr/local/mpi/lib64:${LD_LIBRARY_PATH}
+
 # Create a wrapper for OpenMPI to allow running as root by default
 RUN mv /usr/local/mpi/bin/mpirun /usr/local/mpi/bin/mpirun.real && \
     echo '#!/bin/bash' > /usr/local/mpi/bin/mpirun && \
@@ -51,10 +54,34 @@ RUN mkdir -p /home/mchorse/.ssh /job && \
     echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config && \
     echo 'export PDSH_RCMD_TYPE=ssh' >> /home/mchorse/.bashrc
 
+#### SWITCH TO mchorse USER
+USER mchorse
+
+# install miniconda
+ENV MINICONDA_VERSION 4.8.2
+ENV CONDA_DIR $HOME/miniconda3
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-$MINICONDA_VERSION-Linux-x86_64.sh -O ~/miniconda.sh && \
+    chmod +x ~/miniconda.sh && \
+    ~/miniconda.sh -b -p $CONDA_DIR && \
+    rm ~/miniconda.sh# make non-activate conda commands available
+ENV PATH=$CONDA_DIR/bin:$PATH# make conda activate command available from /bin/bash --login shells
+RUN echo ". $CONDA_DIR/etc/profile.d/conda.sh" >> ~/.profile# make conda activate command available from /bin/bash --interative shells
+RUN conda init bash
+
+# setup conda env
+ENV CONDA_ENV megatron
+RUN conda create --name $CONDA_ENV -y && conda activate $CONDA_ENV
+
+# install torch from scratch
+RUN conda install numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses
+RUN conda install -c pytorch magma-cuda102
+RUN git clone --recursive https://github.com/pytorch/pytorch && \
+    cd pytorch && git submodule sync && git submodule update --init --recursive
+RUN export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"} && python setup.py install && cd ..
+
 #### Python packages
 RUN python -m pip install --upgrade pip && \
-    pip install gpustat && \
-    pip install torch==1.7.1
+    pip install gpustat
 
 COPY requirements.txt $STAGE_DIR
 RUN pip install -r $STAGE_DIR/requirements.txt
@@ -65,7 +92,6 @@ RUN sudo apt-get update -y && sudo apt-get install -y libpython3-dev
 # Clear staging
 RUN rm -r $STAGE_DIR && mkdir -p /tmp && chmod 0777 /tmp
 
-#### SWITCH TO mchorse USER
-USER mchorse
 WORKDIR /home/mchorse
 ENV PATH="/home/mchorse/.local/bin:${PATH}"
+ENTRYPOINT set -e && conda activate $CONDA_ENV && exec "$@"
