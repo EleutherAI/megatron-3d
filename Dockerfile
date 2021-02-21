@@ -101,6 +101,7 @@ RUN pip install -v --disable-pip-version-check --no-cache-dir --global-option="-
 # this is a temporary patch because my /var/lib/docker has nosuid. remember to replace with just sudo later
 USER root
 RUN echo 'deb http://archive.ubuntu.com/ubuntu/ focal main restricted' > /etc/apt/sources.list && apt-get install --upgrade libpython3-dev
+
 RUN apt-get install -y libpython3-dev
 
 # Clear staging
@@ -113,5 +114,7 @@ COPY --from=build / /
 USER mchorse
 WORKDIR /home/mchorse
 
-ENV PATH="~/miniconda3/bin:/home/mchorse/.local/bin:${PATH}"
-ENTRYPOINT ["/home/mchorse/miniconda3/bin/conda", "run", "--no-capture-output", "-n", "megatron"]
+ENV PATH="/usr/local/mpi/bin:~/miniconda3/bin:/home/mchorse/.local/bin:${PATH}" \
+    LD_LIBRARY_PATH="/usr/local/lib:/usr/local/mpi/lib:/usr/local/mpi/lib64:${LD_LIBRARY_PATH}"
+
+ENTRYPOINT ["/home/mchorse/miniconda3/bin/conda", "run", "--no-capture-output", "-n", "megatron", "python"]
