@@ -1,4 +1,4 @@
-FROM atlanticcrypto/cuda-ssh-server:10.2-cudnn
+FROM atlanticcrypto/cuda-ssh-server:10.2-cudnn as build
 
 SHELL [ "/bin/bash", "--login", "-c" ]
 
@@ -97,12 +97,21 @@ RUN pip install -v --disable-pip-version-check --no-cache-dir --global-option="-
 ################### END SLOW SECTION ###################
 # WARNING: Avoid changing anything above this line, because it will take a *long* time to rebuild!
 
-RUN echo 'deb http://archive.ubuntu.com/ubuntu/ focal main restricted' | sudo tee /etc/apt/sources.list && apt-get install --upgrade libpython3-dev
-RUN sudo apt-get update -y && sudo apt-get install -y libpython3-dev
+
+# this is a temporary patch because my /var/lib/docker has nosuid. remember to replace with just sudo later
+USER root
+RUN echo 'deb http://archive.ubuntu.com/ubuntu/ focal main restricted' > /etc/apt/sources.list && apt-get install --upgrade libpython3-dev
+RUN apt-get install -y libpython3-dev
 
 # Clear staging
-RUN rm -r $STAGE_DIR && mkdir -p /tmp && chmod 0777 /tmp
+RUN rm -r $STAGE_DIR /home/mchorse/pytorch && mkdir -p /tmp && chmod 0777 /tmp
 
+# optimization so we don't have to push all of our layers
+FROM scratch
+COPY --from=build / /
+
+USER mchorse
 WORKDIR /home/mchorse
-ENV PATH="/home/mchorse/.local/bin:${PATH}"
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "megatron"]
+
+ENV PATH="~/miniconda3/bin:/home/mchorse/.local/bin:${PATH}"
+ENTRYPOINT ["/home/mchorse/miniconda3/bin/conda", "run", "--no-capture-output", "-n", "megatron"]
