@@ -52,15 +52,15 @@ RUN mkdir -p /home/mchorse/.ssh /job && \
     echo '    StrictHostKeyChecking no' >> /home/mchorse/.ssh/config && \
     echo 'AuthorizedKeysFile     .ssh/authorized_keys' >> /etc/ssh/sshd_config && \
     echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config && \
-    echo 'export PDSH_RCMD_TYPE=ssh' >> /home/mchorse/.bashrc
+    echo 'export PDSH_RCMD_TYPE=ssh' >> /home/mchorse/.bashrc && \
+    chown -R mchorse:mchorse /home/mchorse
 
 #### SWITCH TO mchorse USER
 USER mchorse
 
 # install miniconda
-ENV MINICONDA_VERSION 4.8.2
-ENV CONDA_DIR $HOME/miniconda3
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-$MINICONDA_VERSION-Linux-x86_64.sh -O ~/miniconda.sh && \
+ENV CONDA_DIR ~/miniconda3
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
     chmod +x ~/miniconda.sh && \
     ~/miniconda.sh -b -p $CONDA_DIR && \
     rm ~/miniconda.sh
@@ -70,14 +70,20 @@ RUN conda init bash
 
 # setup conda env
 ENV CONDA_ENV megatron
-RUN conda create --name $CONDA_ENV -y && conda activate $CONDA_ENV
+RUN conda create --name $CONDA_ENV -y
 
 # install torch from scratch
-RUN conda install numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses
-RUN conda install -c pytorch magma-cuda102
+RUN conda install -n $CONDA_ENV numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses
+RUN conda install -n $CONDA_ENV -c pytorch magma-cuda102
+
+
+SHELL ["/home/mchorse/miniconda3/bin/conda", "run", "--no-capture-output", "-n", "megatron", "/bin/bash", "-c"]
+
+WORKDIR /home/mchorse
 RUN git clone --recursive https://github.com/pytorch/pytorch && \
-    cd pytorch && git submodule sync && git submodule update --init --recursive
-RUN export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"} && python setup.py install && cd ..
+    cd pytorch && git submodule sync && git submodule update --init --recursive && \
+    export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"} && echo $CMAKE_PREFIX_PATH && python setup.py install && cd ..
+
 
 #### Python packages
 RUN python -m pip install --upgrade pip && \
@@ -86,7 +92,12 @@ RUN python -m pip install --upgrade pip && \
 COPY requirements.txt $STAGE_DIR
 RUN pip install -r $STAGE_DIR/requirements.txt
 RUN pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" git+https://github.com/NVIDIA/apex.git
-RUN echo 'deb http://archive.ubuntu.com/ubuntu/ focal main restricted' >> /etc/apt/sources.list && apt-get install --upgrade libpython3-dev
+
+
+################### END SLOW SECTION ###################
+# WARNING: Avoid changing anything above this line, because it will take a *long* time to rebuild!
+
+RUN echo 'deb http://archive.ubuntu.com/ubuntu/ focal main restricted' | sudo tee /etc/apt/sources.list && apt-get install --upgrade libpython3-dev
 RUN sudo apt-get update -y && sudo apt-get install -y libpython3-dev
 
 # Clear staging
@@ -94,4 +105,4 @@ RUN rm -r $STAGE_DIR && mkdir -p /tmp && chmod 0777 /tmp
 
 WORKDIR /home/mchorse
 ENV PATH="/home/mchorse/.local/bin:${PATH}"
-ENTRYPOINT set -e && conda activate $CONDA_ENV && exec "$@"
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "megatron"]
