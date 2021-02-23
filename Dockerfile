@@ -19,28 +19,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV STAGE_DIR=/build
 RUN mkdir -p ${STAGE_DIR}
 
-#### OPENMPI
-ENV OPENMPI_BASEVERSION=4.0
-ENV OPENMPI_VERSION=${OPENMPI_BASEVERSION}.1
-RUN cd ${STAGE_DIR} && \
-    wget -q -O - https://download.open-mpi.org/release/open-mpi/v${OPENMPI_BASEVERSION}/openmpi-${OPENMPI_VERSION}.tar.gz | tar xzf - && \
-    cd openmpi-${OPENMPI_VERSION} && \
-    ./configure --prefix=/usr/local/openmpi-${OPENMPI_VERSION} && \
-    make -j"$(nproc)" install && \
-    ln -s /usr/local/openmpi-${OPENMPI_VERSION} /usr/local/mpi && \
-    # Sanity check:
-    test -f /usr/local/mpi/bin/mpic++ && \
-    cd ${STAGE_DIR} && \
-    rm -r ${STAGE_DIR}/openmpi-${OPENMPI_VERSION}
-ENV PATH=/usr/local/mpi/bin:${PATH} \
-    LD_LIBRARY_PATH=/usr/local/lib:/usr/local/mpi/lib:/usr/local/mpi/lib64:${LD_LIBRARY_PATH}
-
-# Create a wrapper for OpenMPI to allow running as root by default
-RUN mv /usr/local/mpi/bin/mpirun /usr/local/mpi/bin/mpirun.real && \
-    echo '#!/bin/bash' > /usr/local/mpi/bin/mpirun && \
-    echo 'mpirun.real --allow-run-as-root --prefix /usr/local/mpi "$@"' >> /usr/local/mpi/bin/mpirun && \
-    chmod a+x /usr/local/mpi/bin/mpirun
-
 #### User account
 RUN useradd --create-home --uid 1000 --shell /bin/bash mchorse && \
     usermod -aG sudo mchorse && \
@@ -71,6 +49,9 @@ RUN conda init bash
 # setup conda env
 ENV CONDA_ENV megatron
 RUN conda create --name $CONDA_ENV -y
+
+# install openmpi & mpi4py
+RUN conda install -n $CONDA_ENV openmpi mpi4py
 
 # install torch from scratch
 RUN conda install -n $CONDA_ENV numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses
