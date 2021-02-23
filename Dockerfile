@@ -43,7 +43,7 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     ~/miniconda.sh -b -p $CONDA_DIR && \
     rm ~/miniconda.sh
 ENV PATH=$CONDA_DIR/bin:$PATH
-RUN echo ". $CONDA_DIR/etc/profile.d/conda.sh" >> ~/.profile# make conda activate command available from /bin/bash --interative shells
+RUN echo ". $CONDA_DIR/etc/profile.d/conda.sh" >> ~/.profile
 RUN conda init bash
 
 # setup conda env
