@@ -9,5 +9,4 @@ tensorflow==2.4.1
 autopep8==1.5.5
 zstandard==0.15.1
 cupy-cuda102==8.4.0
-mpi4py==3.0.3
 wandb==0.10.18
