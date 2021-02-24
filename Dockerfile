@@ -50,11 +50,8 @@ RUN conda init bash
 ENV CONDA_ENV megatron
 RUN conda create --name $CONDA_ENV -y
 
-# install openmpi & mpi4py
-RUN conda install -n $CONDA_ENV openmpi mpi4py
-
 # install torch from scratch
-RUN conda install -n $CONDA_ENV numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses
+RUN conda install -n $CONDA_ENV openmpi mpi4py numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses
 RUN conda install -n $CONDA_ENV -c pytorch magma-cuda102
 
 
@@ -65,13 +62,11 @@ RUN git clone -b v1.7.1 --recursive https://github.com/pytorch/pytorch && \
     cd pytorch && git submodule sync && git submodule update --init --recursive && \
     export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"} && echo $CMAKE_PREFIX_PATH && python setup.py install && cd ..
 
-
 #### Python packages
 RUN python -m pip install --upgrade pip && \
-    pip install gpustat
+    pip install gpustat triton==0.2.3 pybind11==2.6.2 six regex numpy==1.19.5 nltk==3.5 tensorflow==2.4.1 zstandard==0.15.1 cupy-cuda102==8.4.0 wandb==0.10.18 torchvision>=0.4.0 tqdm tensorboardX==1.8 ninja
 
-COPY requirements.txt $STAGE_DIR
-RUN pip install -r $STAGE_DIR/requirements.txt
+RUN pip install --no-dependencies -e git+git://github.com/EleutherAI/DeeperSpeed.git@5a454114886709987a954ed315bf9f6b14cc4efc#egg=deepspeed
 RUN pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" git+https://github.com/NVIDIA/apex.git
 
 
@@ -97,5 +92,5 @@ WORKDIR /home/mchorse
 
 ENV PATH="/usr/local/mpi/bin:~/miniconda3/bin:/home/mchorse/.local/bin:${PATH}" \
     LD_LIBRARY_PATH="/usr/local/lib:/usr/local/mpi/lib:/usr/local/mpi/lib64:${LD_LIBRARY_PATH}"
-
+ENV DATA_DIR="/mnt/ssd-cluster/data"
 ENTRYPOINT ["/home/mchorse/miniconda3/bin/conda", "run", "--no-capture-output", "-n", "megatron", "python"]
