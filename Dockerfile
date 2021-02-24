@@ -64,8 +64,8 @@ RUN git clone -b v1.7.1 --recursive https://github.com/pytorch/pytorch && \
 
 #### Python packages
 RUN python -m pip install --upgrade pip && \
-    pip install gpustat triton==0.2.3 pybind11==2.6.2 six regex numpy==1.19.5 nltk==3.5 tensorflow==2.4.1 zstandard==0.15.1 cupy-cuda102==8.4.0 wandb==0.10.18 torchvision>=0.4.0 tqdm tensorboardX==1.8 ninja
-
+    pip install gpustat pybind11==2.6.2 six regex nltk==3.5 zstandard==0.15.1 cupy-cuda102==8.4.0 wandb==0.10.18 tqdm ninja protobuf >= 3.8.0
+RUN pip install --no-dependencies triton==0.2.3 tensorflow==2.4.1 torchvision>=0.4.0 tensorboardX==1.8 
 RUN pip install --no-dependencies -e git+git://github.com/EleutherAI/DeeperSpeed.git@5a454114886709987a954ed315bf9f6b14cc4efc#egg=deepspeed
 RUN pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" git+https://github.com/NVIDIA/apex.git
 
