@@ -61,7 +61,7 @@ RUN conda install -n $CONDA_ENV -c pytorch magma-cuda102
 SHELL ["/home/mchorse/miniconda3/bin/conda", "run", "--no-capture-output", "-n", "megatron", "/bin/bash", "-c"]
 
 WORKDIR /home/mchorse
-RUN git clone --recursive https://github.com/pytorch/pytorch && \
+RUN git clone -b v1.7.1 --recursive https://github.com/pytorch/pytorch && \
     cd pytorch && git submodule sync && git submodule update --init --recursive && \
     export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"} && echo $CMAKE_PREFIX_PATH && python setup.py install && cd ..
 
